@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock & Pedidos — Koko Chillout</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#1a1a2e;--accent:#c9a84c;--bg:#f5f0e8;--card:#fff;--text:#1a1a2e;--muted:#7a7060;--green:#2d9e5f;--red:#d9363e;--orange:#f4a11d;--radius:10px}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+header{background:var(--primary);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+header h1{font-size:1rem;font-weight:700;color:var(--accent)}
+header span{font-size:.75rem;color:rgba(255,255,255,.5)}
+.nav-tabs{display:flex;gap:6px;padding:12px 20px;background:var(--primary);border-bottom:2px solid var(--accent)}
+.nav-tabs button{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);padding:6px 14px;border-radius:20px;cursor:pointer;font-size:.83rem;font-weight:600;transition:.15s}
+.nav-tabs button.active{background:var(--accent);color:var(--primary)}
+.screen{display:none;padding:16px;max-width:960px;margin:0 auto}
+.screen.active{display:block}
+.section{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.section h3{font-size:.9rem;font-weight:700;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.btn{border:none;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem}
+.btn-primary{background:var(--primary);color:var(--accent)}
+.btn-accent{background:var(--accent);color:var(--primary)}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--red);color:#fff}
+.btn-gray{background:#eee;color:#555}
+.btn-sm{padding:5px 10px;font-size:.75rem}
+input,select,textarea{border:1px solid #ddd;border-radius:8px;padding:7px 10px;font-size:.83rem;background:#fff;width:100%}
+.form-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.form-row label{font-size:.75rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px}
+.form-group{flex:1;min-width:100px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:#f5f0e8;padding:7px 8px;text-align:left;font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+td{padding:7px 8px;border-bottom:1px solid #f0ebe0;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.badge{border-radius:20px;padding:3px 8px;font-size:.7rem;font-weight:700}
+.badge-ok{background:#e8f5ee;color:#1a7a45}
+.badge-low{background:#fff3e0;color:#b45309}
+.badge-out{background:#fee2e2;color:#991b1b}
+.stock-bar-wrap{width:80px;height:8px;background:#eee;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.stock-bar{height:100%;border-radius:4px;transition:.3s}
+.proveedor-tag{background:#f5f0e8;border:1px solid #e0d8c8;border-radius:6px;padding:2px 8px;font-size:.72rem;color:var(--muted);font-weight:600}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stat-val{font-size:1.5rem;font-weight:800;color:var(--accent)}
+.stat-label{font-size:.72rem;color:var(--muted);margin-top:3px}
+.alert-bar{background:#fff3e0;border-left:4px solid var(--orange);border-radius:6px;padding:10px 14px;font-size:.82rem;margin-bottom:12px;display:none}
+.alert-bar.show{display:block}
+.pedido-group{margin-bottom:14px;border:1px solid #e8e0d0;border-radius:10px;overflow:hidden}
+.pedido-group-header{background:#f5f0e8;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.pedido-group-header strong{font-size:.85rem;color:var(--primary)}
+.pedido-group-body{padding:0}
+.pedido-row{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid #f0ebe0;font-size:.82rem}
+.pedido-row:last-child{border-bottom:none}
+.pedido-qty{font-weight:700;color:var(--accent);min-width:60px;text-align:right}
+.send-btns{display:flex;gap:8px;margin-top:8px}
+.upload-area{border:2px dashed #c9a84c;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.15s;background:#fdf8f0}
+.upload-area:hover{background:#f5f0e8}
+.upload-area p{font-size:.83rem;color:var(--muted);margin-top:6px}
+.log-entry{font-size:.78rem;padding:6px 0;border-bottom:1px solid #f0ebe0;color:var(--muted)}
+.log-entry span{color:var(--primary);font-weight:600}
+.del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px}
+.qty-input{width:60px;text-align:center;padding:4px 6px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📦 Stock & Pedidos — Koko Chillout</h1>
+  <span id="lastUpdate">Sin actualizaciones</span>
+</header>
+<div class="nav-tabs">
+  <button class="active" onclick="showScreen('stock',this)">Stock</button>
+  <button onclick="showScreen('pedidos',this)">Pedidos</button>
+  <button onclick="showScreen('proveedores',this)">Proveedores</button>
+  <button onclick="showScreen('ticketZ',this)">Subir Ticket Z</button>
+  <button onclick="showScreen('historial',this)">Historial</button>
+</div>
+
+<!-- STOCK -->
+<div id="screen-stock" class="screen active">
+  <div class="stats-row" id="statsStock"></div>
+  <div class="alert-bar" id="alertBar">⚠️ Hay productos por debajo del stock mínimo. Revisa la pestaña <strong>Pedidos</strong>.</div>
+  <div class="section">
+    <h3>➕ Añadir / editar producto</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Nombre producto</label><input id="pNombre" placeholder="Ej. Hamburguesa Clásica"/></div>
+      <div class="form-group" style="max-width:100px"><label>Categoría</label>
+        <select id="pCat">
+          <option value="cocina">🍽 Cocina</option>
+          <option value="barra">🍺 Barra</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:90px"><label>Stock actual</label><input id="pActual" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group" style="max-width:90px"><label>Stock mínimo</label><input id="pMinimo" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group" style="max-width:90px"><label>Stock objetivo</label><input id="pObjetivo" type="number" min="0" placeholder="0"/></div>
+      <div class="form-group" style="max-width:100px"><label>Unidad</label><input id="pUnidad" placeholder="Ej. kg, ud, caja"/></div>
+      <div class="form-group"><label>Proveedor</label>
+        <select id="pProveedor"><option value="">— Sin asignar —</option></select>
+      </div>
+      <div style="align-self:flex-end"><button class="btn btn-accent" onclick="addProducto()">Guardar</button></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>📋 Inventario actual</h3>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <input id="searchStock" placeholder="Buscar producto..." style="max-width:220px" oninput="renderStock()"/>
+      <select id="filterCat" onchange="renderStock()" style="max-width:140px">
+        <option value="">Todas las categorías</option>
+        <option value="cocina">🍽 Cocina</option>
+        <option value="barra">🍺 Barra</option>
+      </select>
+      <select id="filterEstado" onchange="renderStock()" style="max-width:140px">
+        <option value="">Todos los estados</option>
+        <option value="low">Stock bajo</option>
+        <option value="out">Sin stock</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Estado</th><th>Proveedor</th><th></th></tr></thead>
+      <tbody id="stockTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PEDIDOS -->
+<div id="screen-pedidos" class="screen">
+  <div class="section">
+    <h3>🛒 Pedido sugerido</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Productos por debajo del stock objetivo, agrupados por proveedor. Puedes ajustar las cantidades antes de enviar.</p>
+    <div id="pedidosContainer"></div>
+  </div>
+</div>
+
+<!-- PROVEEDORES -->
+<div id="screen-proveedores" class="screen">
+  <div class="section">
+    <h3>➕ Añadir proveedor</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Nombre</label><input id="prvNombre" placeholder="Ej. Makro"/></div>
+      <div class="form-group"><label>Contacto (nombre)</label><input id="prvContacto" placeholder="Ej. Juan García"/></div>
+      <div class="form-group"><label>Teléfono / WhatsApp</label><input id="prvTelefono" placeholder="Ej. 600123456"/></div>
+      <div class="form-group"><label>Email</label><input id="prvEmail" placeholder="Ej. pedidos@makro.es"/></div>
+      <div style="align-self:flex-end"><button class="btn btn-accent" onclick="addProveedor()">Guardar</button></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>📋 Proveedores</h3>
+    <table>
+      <thead><tr><th>Proveedor</th><th>Contacto</th><th>Teléfono</th><th>Email</th><th></th></tr></thead>
+      <tbody id="provTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TICKET Z -->
+<div id="screen-ticketZ" class="screen">
+  <div class="section">
+    <h3>📸 Subir foto del Ticket Z</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Sube una foto del ticket Z y la IA extraerá automáticamente los productos y cantidades.</p>
+    <div style="margin-bottom:10px">
+      <label style="font-size:.75rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px">Clave API de Anthropic</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="password" id="apiKey" placeholder="sk-ant-..." style="max-width:340px"/>
+        <button class="btn btn-accent btn-sm" onclick="guardarApiKey()">💾 Guardar clave</button>
+        <button class="btn btn-gray btn-sm" onclick="borrarApiKey()">🗑 Borrar</button>
+      </div>
+      <p id="apiKeyStatus" style="font-size:.72rem;color:var(--muted);margin-top:4px">Tu clave se guarda solo en este dispositivo (localStorage). Nunca se envía a ningún servidor externo.</p>
+    </div>
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+      <div style="font-size:2rem">📷</div>
+      <p>Pulsa para subir una foto del ticket Z</p>
+      <p style="font-size:.75rem">JPG, PNG o WEBP</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="onFileSelected(event)"/>
+    <div id="previewWrap" style="display:none;margin-top:10px">
+      <img id="previewImg" style="max-width:100%;max-height:300px;border-radius:8px;border:1px solid #ddd"/>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-accent" onclick="procesarFotoIA()">🤖 Extraer con IA y actualizar stock</button>
+        <button class="btn btn-gray" onclick="cancelarFoto()">Cancelar</button>
+      </div>
+    </div>
+    <div id="loadingIA" style="display:none;margin-top:12px;text-align:center;padding:16px;background:#f5f0e8;border-radius:8px">
+      <div style="font-size:1.4rem;margin-bottom:6px">🤖</div>
+      <p style="font-size:.83rem;color:var(--muted)">Analizando el ticket...</p>
+    </div>
+    <div id="resultadoZ" style="margin-top:12px;display:none"></div>
+  </div>
+  <div class="section">
+    <h3>📄 O pega el texto manualmente</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">Si prefieres, puedes pegar el texto del ticket directamente.</p>
+    <textarea id="ticketZTexto" rows="8" placeholder="Pega aquí el contenido del ticket Z...&#10;&#10;Ejemplo:&#10;Hamburguesa Clásica  x4&#10;Patatas Fritas  x6&#10;Coca-Cola  x8&#10;Caña  x12" style="font-family:monospace;font-size:.8rem"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-accent" onclick="procesarTicketZ()">⚡ Procesar texto</button>
+      <button class="btn btn-gray" onclick="document.getElementById('ticketZTexto').value=''">Limpiar</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>✏️ Actualización manual de stock</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">Ajusta el stock de cualquier producto directamente.</p>
+    <table>
+      <thead><tr><th>Producto</th><th>Stock actual</th><th>Nuevo stock</th><th></th></tr></thead>
+      <tbody id="manualStockTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- HISTORIAL -->
+<div id="screen-historial" class="screen">
+  <div class="section">
+    <h3>📅 Historial de actualizaciones</h3>
+    <div id="historialList"></div>
+  </div>
+</div>
+
+<script>
+let state={
+  productos:[],
+  proveedores:[],
+  historial:[],
+  provIdSeq:1,
+  prodIdSeq:1,
+  editProdId:null
+};
+
+function saveLS(){try{localStorage.setItem('koko_stock',JSON.stringify(state));}catch(e){}}
+function loadLS(){try{const r=localStorage.getItem('koko_stock');if(r)state=JSON.parse(r);}catch(e){}}
+
+// ---- NAV ----
+function showScreen(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='stock'){renderStock();renderStockStats();}
+  if(id==='pedidos') renderPedidos();
+  if(id==='proveedores') renderProveedores();
+  if(id==='ticketZ') renderManualStock();
+  if(id==='historial') renderHistorial();
+}
+
+// ---- PROVEEDORES ----
+function addProveedor(){
+  const n=document.getElementById('prvNombre').value.trim();
+  if(!n) return;
+  state.proveedores.push({
+    id:state.provIdSeq++,
+    nombre:n,
+    contacto:document.getElementById('prvContacto').value.trim(),
+    telefono:document.getElementById('prvTelefono').value.trim(),
+    email:document.getElementById('prvEmail').value.trim()
+  });
+  ['prvNombre','prvContacto','prvTelefono','prvEmail'].forEach(id=>document.getElementById(id).value='');
+  saveLS(); renderProveedores(); updateProvSelect();
+}
+function delProveedor(id){
+  if(!confirm('¿Eliminar proveedor?')) return;
+  state.proveedores=state.proveedores.filter(p=>p.id!==id);
+  saveLS(); renderProveedores(); updateProvSelect();
+}
+function renderProveedores(){
+  document.getElementById('provTable').innerHTML=state.proveedores.length
+    ?state.proveedores.map(p=>`<tr>
+      <td><strong>${p.nombre}</strong></td>
+      <td>${p.contacto||'—'}</td>
+      <td>${p.telefono?`<a href="tel:${p.telefono}">${p.telefono}</a>`:'—'}</td>
+      <td>${p.email?`<a href="mailto:${p.email}">${p.email}</a>`:'—'}</td>
+      <td><button class="del-btn" onclick="delProveedor(${p.id})">🗑</button></td>
+    </tr>`).join('')
+    :'<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:16px">Sin proveedores aún</td></tr>';
+}
+function updateProvSelect(){
+  const sel=document.getElementById('pProveedor');
+  sel.innerHTML='<option value="">— Sin asignar —</option>'+
+    state.proveedores.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+}
+
+// ---- PRODUCTOS ----
+function addProducto(){
+  const nombre=document.getElementById('pNombre').value.trim();
+  if(!nombre) return;
+  const data={
+    nombre,
+    cat:document.getElementById('pCat').value,
+    actual:parseFloat(document.getElementById('pActual').value)||0,
+    minimo:parseFloat(document.getElementById('pMinimo').value)||0,
+    objetivo:parseFloat(document.getElementById('pObjetivo').value)||0,
+    unidad:document.getElementById('pUnidad').value.trim()||'ud',
+    provId:parseInt(document.getElementById('pProveedor').value)||null
+  };
+  if(state.editProdId){
+    const p=state.productos.find(p=>p.id===state.editProdId);
+    Object.assign(p,data);
+    state.editProdId=null;
+    document.querySelector('.btn-accent').textContent='Guardar';
+  } else {
+    state.productos.push({id:state.prodIdSeq++,...data});
+  }
+  ['pNombre','pActual','pMinimo','pObjetivo','pUnidad'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pProveedor').value='';
+  saveLS(); renderStock(); renderStockStats();
+}
+function editProducto(id){
+  const p=state.productos.find(p=>p.id===id);
+  state.editProdId=id;
+  document.getElementById('pNombre').value=p.nombre;
+  document.getElementById('pCat').value=p.cat;
+  document.getElementById('pActual').value=p.actual;
+  document.getElementById('pMinimo').value=p.minimo;
+  document.getElementById('pObjetivo').value=p.objetivo;
+  document.getElementById('pUnidad').value=p.unidad;
+  document.getElementById('pProveedor').value=p.provId||'';
+  document.querySelector('.btn-accent').textContent='Actualizar';
+  document.getElementById('pNombre').focus();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function delProducto(id){
+  if(!confirm('¿Eliminar producto?')) return;
+  state.productos=state.productos.filter(p=>p.id!==id);
+  saveLS(); renderStock(); renderStockStats();
+}
+
+function getEstado(p){
+  if(p.actual<=0) return 'out';
+  if(p.actual<=p.minimo) return 'low';
+  return 'ok';
+}
+function getBadge(estado){
+  if(estado==='out') return '<span class="badge badge-out">Sin stock</span>';
+  if(estado==='low') return '<span class="badge badge-low">Stock bajo</span>';
+  return '<span class="badge badge-ok">OK</span>';
+}
+function getBarColor(estado){
+  if(estado==='out') return '#d9363e';
+  if(estado==='low') return '#f4a11d';
+  return '#2d9e5f';
+}
+
+function renderStock(){
+  const search=(document.getElementById('searchStock').value||'').toLowerCase();
+  const filterCat=document.getElementById('filterCat').value;
+  const filterEstado=document.getElementById('filterEstado').value;
+  let prods=state.productos.filter(p=>{
+    if(search&&!p.nombre.toLowerCase().includes(search)) return false;
+    if(filterCat&&p.cat!==filterCat) return false;
+    const est=getEstado(p);
+    if(filterEstado&&est!==filterEstado) return false;
+    return true;
+  });
+  const tbody=document.getElementById('stockTable');
+  if(!prods.length){tbody.innerHTML='<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:16px">Sin productos</td></tr>';return;}
+  tbody.innerHTML=prods.map(p=>{
+    const est=getEstado(p);
+    const pct=p.objetivo>0?Math.min(100,Math.round((p.actual/p.objetivo)*100)):0;
+    const prov=state.proveedores.find(v=>v.id===p.provId);
+    return `<tr>
+      <td><strong>${p.nombre}</strong></td>
+      <td><span style="font-size:.72rem;color:var(--muted)">${p.cat==='cocina'?'🍽 Cocina':'🍺 Barra'}</span></td>
+      <td>
+        <span class="stock-bar-wrap"><span class="stock-bar" style="width:${pct}%;background:${getBarColor(est)}"></span></span>
+        <strong>${p.actual}</strong> <span style="color:var(--muted);font-size:.75rem">${p.unidad} / obj. ${p.objetivo}</span>
+      </td>
+      <td>${getBadge(est)}</td>
+      <td>${prov?`<span class="proveedor-tag">${prov.nombre}</span>`:'<span style="color:#ccc;font-size:.75rem">—</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-gray btn-sm" onclick="editProducto(${p.id})">✏️</button>
+        <button class="del-btn" onclick="delProducto(${p.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStockStats(){
+  const total=state.productos.length;
+  const ok=state.productos.filter(p=>getEstado(p)==='ok').length;
+  const low=state.productos.filter(p=>getEstado(p)==='low').length;
+  const out=state.productos.filter(p=>getEstado(p)==='out').length;
+  document.getElementById('statsStock').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-label">Productos</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">${ok}</div><div class="stat-label">Con stock OK</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--orange)">${low}</div><div class="stat-label">Stock bajo</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--red)">${out}</div><div class="stat-label">Sin stock</div></div>`;
+  const alertBar=document.getElementById('alertBar');
+  alertBar.classList.toggle('show', low>0||out>0);
+}
+
+// ---- PEDIDOS ----
+function renderPedidos(){
+  const necesitan=state.productos.filter(p=>p.actual<p.objetivo);
+  const container=document.getElementById('pedidosContainer');
+  if(!necesitan.length){
+    container.innerHTML='<p style="color:var(--green);font-weight:700;text-align:center;padding:20px">✅ Todo el stock está al nivel objetivo. No hay pedidos pendientes.</p>';
+    return;
+  }
+  // Agrupar por proveedor
+  const grupos={};
+  necesitan.forEach(p=>{
+    const key=p.provId||'sin_proveedor';
+    if(!grupos[key]) grupos[key]=[];
+    grupos[key].push(p);
+  });
+  container.innerHTML='';
+  Object.entries(grupos).forEach(([provId,prods])=>{
+    const prov=provId==='sin_proveedor'?null:state.proveedores.find(v=>v.id===parseInt(provId));
+    const nombre=prov?prov.nombre:'Sin proveedor asignado';
+    const div=document.createElement('div');
+    div.className='pedido-group';
+    div.innerHTML=`
+      <div class="pedido-group-header">
+        <strong>🏪 ${nombre}</strong>
+        <div class="send-btns">
+          ${prov&&prov.telefono?`<button class="btn btn-green btn-sm" onclick="enviarWhatsApp(${prov.id})">📱 WhatsApp</button>`:''}
+          ${prov&&prov.email?`<button class="btn btn-primary btn-sm" onclick="enviarEmail(${prov.id})">✉️ Email</button>`:''}
+        </div>
+      </div>
+      <div class="pedido-group-body">
+        ${prods.map(p=>{
+          const necesario=p.objetivo-p.actual;
+          return `<div class="pedido-row">
+            <span>${p.nombre}</span>
+            <span style="color:var(--muted);font-size:.75rem">Stock: ${p.actual} ${p.unidad} / Obj: ${p.objetivo} ${p.unidad}</span>
+            <span class="pedido-qty">
+              <input type="number" class="qty-input" id="qty_${p.id}" value="${necesario}" min="0" style="width:60px;text-align:center;padding:4px"/>
+              <span style="font-size:.72rem;color:var(--muted);margin-left:3px">${p.unidad}</span>
+            </span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function getPedidoTexto(provId){
+  const prov=state.proveedores.find(v=>v.id===provId);
+  const prods=state.productos.filter(p=>p.provId===provId&&p.actual<p.objetivo);
+  const fecha=new Date().toLocaleDateString('es-ES');
+  let texto=`Pedido Koko Chillout — ${fecha}\n\n`;
+  prods.forEach(p=>{
+    const qty=document.getElementById(`qty_${p.id}`)?document.getElementById(`qty_${p.id}`).value:(p.objetivo-p.actual);
+    texto+=`• ${p.nombre}: ${qty} ${p.unidad}\n`;
+  });
+  texto+=`\nGracias, ${prov?prov.nombre:''}`;
+  return texto;
+}
+
+function enviarWhatsApp(provId){
+  const prov=state.proveedores.find(v=>v.id===provId);
+  if(!prov||!prov.telefono) return;
+  const texto=getPedidoTexto(provId);
+  const tel=prov.telefono.replace(/\D/g,'');
+  const url=`https://wa.me/${tel}?text=${encodeURIComponent(texto)}`;
+  window.open(url,'_blank');
+}
+
+function enviarEmail(provId){
+  const prov=state.proveedores.find(v=>v.id===provId);
+  if(!prov||!prov.email) return;
+  const texto=getPedidoTexto(provId);
+  const fecha=new Date().toLocaleDateString('es-ES');
+  const asunto=`Pedido Koko Chillout — ${fecha}`;
+  window.location.href=`mailto:${prov.email}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(texto)}`;
+}
+
+// ---- API KEY ----
+function guardarApiKey(){
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){alert('Introduce la clave primero.');return;}
+  localStorage.setItem('koko_apikey',key);
+  document.getElementById('apiKeyStatus').textContent='✅ Clave guardada en este dispositivo.';
+  document.getElementById('apiKeyStatus').style.color='var(--green)';
+}
+function borrarApiKey(){
+  if(!confirm('¿Borrar la clave guardada?')) return;
+  localStorage.removeItem('koko_apikey');
+  document.getElementById('apiKey').value='';
+  document.getElementById('apiKeyStatus').textContent='Clave eliminada.';
+  document.getElementById('apiKeyStatus').style.color='var(--muted)';
+}
+function cargarApiKey(){
+  const key=localStorage.getItem('koko_apikey');
+  if(key){
+    document.getElementById('apiKey').value=key;
+    document.getElementById('apiKeyStatus').textContent='✅ Clave cargada automáticamente.';
+    document.getElementById('apiKeyStatus').style.color='var(--green)';
+  }
+}
+
+// ---- FOTO + IA ----
+let imagenBase64=null, imagenMime=null;
+
+function onFileSelected(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  imagenMime=file.type;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    imagenBase64=dataUrl.split(',')[1];
+    document.getElementById('previewImg').src=dataUrl;
+    document.getElementById('previewWrap').style.display='block';
+    document.getElementById('uploadArea').style.display='none';
+    document.getElementById('resultadoZ').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelarFoto(){
+  imagenBase64=null; imagenMime=null;
+  document.getElementById('previewWrap').style.display='none';
+  document.getElementById('uploadArea').style.display='block';
+  document.getElementById('fileInput').value='';
+  document.getElementById('resultadoZ').style.display='none';
+}
+
+async function procesarFotoIA(){
+  const apiKey=document.getElementById('apiKey').value.trim();
+  if(!apiKey){alert('Introduce tu clave API de Anthropic primero.');return;}
+  if(!imagenBase64){alert('Sube una imagen primero.');return;}
+
+  const productosLista=state.productos.map(p=>p.nombre).join(', ');
+  const prompt=`Eres un asistente de restaurante. Analiza este ticket Z de cierre de caja.
+Extrae SOLO los productos que aparecen con sus cantidades vendidas.
+Los productos del inventario son: ${productosLista}.
+Devuelve ÚNICAMENTE un JSON válido con este formato, sin texto adicional:
+{"productos":[{"nombre":"nombre exacto del producto del inventario","cantidad":4},{"nombre":"otro producto","cantidad":2}]}
+Si un producto del ticket no coincide exactamente con el inventario, usa el nombre más parecido.
+Si no puedes identificar la cantidad, usa 1.`;
+
+  document.getElementById('loadingIA').style.display='block';
+  document.getElementById('previewWrap').style.display='none';
+
+  try {
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:imagenMime,data:imagenBase64}},
+            {type:'text',text:prompt}
+          ]
+        }]
+      })
+    });
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    const texto=data.content[0].text.trim();
+    const clean=texto.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    aplicarResultadoIA(parsed.productos||[]);
+  } catch(err){
+    document.getElementById('loadingIA').style.display='none';
+    document.getElementById('previewWrap').style.display='block';
+    document.getElementById('resultadoZ').style.display='block';
+    document.getElementById('resultadoZ').innerHTML=`<div style="background:#fee2e2;border-radius:8px;padding:12px;font-size:.82rem;color:#991b1b">❌ Error: ${err.message}</div>`;
+  }
+}
+
+function aplicarResultadoIA(items){
+  document.getElementById('loadingIA').style.display='none';
+  const resultados=[], noEncontrados=[];
+  items.forEach(item=>{
+    const prod=state.productos.find(p=>
+      p.nombre.toLowerCase().includes(item.nombre.toLowerCase())||
+      item.nombre.toLowerCase().includes(p.nombre.toLowerCase())
+    );
+    if(prod){
+      prod.actual=Math.max(0,prod.actual-item.cantidad);
+      resultados.push({nombre:prod.nombre,qty:item.cantidad,nuevo:prod.actual});
+    } else {
+      noEncontrados.push(item.nombre);
+    }
+  });
+  const fecha=new Date().toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  state.historial.unshift({fecha,tipo:'Foto Ticket Z (IA)',items:resultados.map(r=>`${r.nombre} −${r.qty}`)});
+  if(state.historial.length>200) state.historial=state.historial.slice(0,200);
+  document.getElementById('lastUpdate').textContent='Última actualización: '+fecha;
+  saveLS(); renderStock(); renderStockStats();
+
+  let html=`<div style="background:#e8f5ee;border-radius:8px;padding:12px;font-size:.82rem;color:#1a5c35;margin-bottom:8px">
+    ✅ IA procesó el ticket. ${resultados.length} producto${resultados.length!==1?'s':''} actualizados.
+  </div>`;
+  if(resultados.length){
+    html+=`<table style="font-size:.78rem;margin-bottom:8px"><thead><tr><th>Producto</th><th>Vendido</th><th>Stock restante</th></tr></thead><tbody>
+    ${resultados.map(r=>`<tr><td>${r.nombre}</td><td style="color:var(--red)">−${r.qty}</td><td><strong>${r.nuevo}</strong></td></tr>`).join('')}
+    </tbody></table>`;
+  }
+  if(noEncontrados.length){
+    html+=`<div style="background:#fff3e0;border-radius:8px;padding:10px;font-size:.78rem;color:#92400e">
+      ⚠️ No encontrados en el inventario: ${noEncontrados.join(', ')}
+    </div>`;
+  }
+  document.getElementById('resultadoZ').style.display='block';
+  document.getElementById('resultadoZ').innerHTML=html;
+  cancelarFoto();
+}
+
+// ---- TICKET Z (texto manual) ----
+function procesarTicketZ(){
+  const texto=document.getElementById('ticketZTexto').value.trim();
+  if(!texto){alert('Pega el contenido del ticket Z primero.');return;}
+  const lineas=texto.split('\n').filter(l=>l.trim());
+  const resultados=[];
+  const noEncontrados=[];
+  lineas.forEach(linea=>{
+    // Buscar patrón: nombre del producto y cantidad (x4, x 4, 4x, etc.)
+    const match=linea.match(/^(.+?)\s+x\s*(\d+)|^(.+?)\s+(\d+)\s*x|x(\d+)\s*(.+)|(\d+)x\s*(.+)/i);
+    if(!match) return;
+    let nombre='', qty=0;
+    if(match[1]&&match[2]){nombre=match[1].trim();qty=parseInt(match[2]);}
+    else if(match[3]&&match[4]){nombre=match[3].trim();qty=parseInt(match[4]);}
+    else if(match[5]&&match[6]){nombre=match[6].trim();qty=parseInt(match[5]);}
+    else if(match[7]&&match[8]){nombre=match[8].trim();qty=parseInt(match[7]);}
+    if(!nombre||!qty) return;
+    // Buscar producto (búsqueda flexible)
+    const prod=state.productos.find(p=>p.nombre.toLowerCase().includes(nombre.toLowerCase())||nombre.toLowerCase().includes(p.nombre.toLowerCase()));
+    if(prod){
+      prod.actual=Math.max(0,prod.actual-qty);
+      resultados.push({nombre:prod.nombre,qty,nuevo:prod.actual});
+    } else {
+      noEncontrados.push(nombre);
+    }
+  });
+  if(!resultados.length&&!noEncontrados.length){
+    document.getElementById('resultadoZ').style.display='block';
+    document.getElementById('resultadoZ').innerHTML='<div style="background:#fee2e2;border-radius:8px;padding:12px;font-size:.82rem;color:#991b1b">No se encontraron productos en el texto. Comprueba el formato.</div>';
+    return;
+  }
+  // Registrar en historial
+  const fecha=new Date().toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  state.historial.unshift({fecha,tipo:'Ticket Z',items:resultados.map(r=>`${r.nombre} −${r.qty}`)});
+  if(state.historial.length>200) state.historial=state.historial.slice(0,200);
+  document.getElementById('lastUpdate').textContent='Última actualización: '+fecha;
+  saveLS();
+  let html=`<div style="background:#e8f5ee;border-radius:8px;padding:12px;font-size:.82rem;color:#1a5c35;margin-bottom:8px">
+    ✅ Stock actualizado: ${resultados.length} producto${resultados.length!==1?'s':''} descontados.
+  </div>`;
+  if(resultados.length){
+    html+=`<table style="font-size:.78rem"><thead><tr><th>Producto</th><th>Vendido</th><th>Stock restante</th></tr></thead><tbody>
+    ${resultados.map(r=>`<tr><td>${r.nombre}</td><td style="color:var(--red)">−${r.qty}</td><td><strong>${r.nuevo}</strong></td></tr>`).join('')}
+    </tbody></table>`;
+  }
+  if(noEncontrados.length){
+    html+=`<div style="background:#fff3e0;border-radius:8px;padding:10px;font-size:.78rem;color:#92400e;margin-top:8px">
+      ⚠️ No encontrados en el inventario: ${noEncontrados.join(', ')}
+    </div>`;
+  }
+  document.getElementById('resultadoZ').style.display='block';
+  document.getElementById('resultadoZ').innerHTML=html;
+  document.getElementById('ticketZTexto').value='';
+  renderStock(); renderStockStats();
+}
+
+function renderManualStock(){
+  document.getElementById('manualStockTable').innerHTML=state.productos.map(p=>`
+    <tr>
+      <td>${p.nombre} <span style="font-size:.7rem;color:var(--muted)">(${p.unidad})</span></td>
+      <td><strong>${p.actual}</strong></td>
+      <td><input type="number" class="qty-input" id="manual_${p.id}" value="${p.actual}" min="0" style="width:70px"/></td>
+      <td><button class="btn btn-accent btn-sm" onclick="guardarManual(${p.id})">Guardar</button></td>
+    </tr>`).join('');
+}
+function guardarManual(id){
+  const p=state.productos.find(p=>p.id===id);
+  const nuevo=parseFloat(document.getElementById(`manual_${id}`).value)||0;
+  const diff=nuevo-p.actual;
+  p.actual=nuevo;
+  const fecha=new Date().toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  state.historial.unshift({fecha,tipo:'Ajuste manual',items:[`${p.nombre}: ${diff>=0?'+':''}${diff} → ${nuevo} ${p.unidad}`]});
+  document.getElementById('lastUpdate').textContent='Última actualización: '+fecha;
+  saveLS(); renderStock(); renderStockStats();
+}
+
+// ---- HISTORIAL ----
+function renderHistorial(){
+  const list=document.getElementById('historialList');
+  if(!state.historial.length){list.innerHTML='<p style="color:var(--muted);font-size:.83rem;padding:8px">Sin movimientos registrados.</p>';return;}
+  list.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <span style="font-size:.8rem;color:var(--muted)">${state.historial.length} registro${state.historial.length!==1?'s':''} guardados</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gray btn-sm" onclick="limpiarHistorialAntiguo()">🧹 Borrar entradas de hace +30 días</button>
+        <button class="btn btn-red btn-sm" onclick="limpiarHistorialCompleto()">🗑 Borrar todo</button>
+      </div>
+    </div>`+
+  state.historial.slice(0,100).map(h=>`
+    <div class="log-entry">
+      <span>${h.fecha}</span> — <strong style="color:var(--accent)">${h.tipo}</strong><br>
+      <span style="color:var(--muted)">${h.items.join(' · ')}</span>
+    </div>`).join('');
+}
+
+function limpiarHistorialAntiguo(){
+  const hace30=new Date();
+  hace30.setDate(hace30.getDate()-30);
+  const antes=state.historial.length;
+  state.historial=state.historial.filter(h=>{
+    const partes=h.fecha.split(/[\s,\/]+/);
+    try{
+      const d=new Date(`${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`);
+      return d>=hace30;
+    }catch(e){return true;}
+  });
+  const borrados=antes-state.historial.length;
+  saveLS(); renderHistorial();
+  alert(`Se han eliminado ${borrados} registro${borrados!==1?'s':''} antiguos.`);
+}
+
+function limpiarHistorialCompleto(){
+  if(!confirm('¿Borrar todo el historial? Esta acción no se puede deshacer.')) return;
+  state.historial=[];
+  saveLS(); renderHistorial();
+}
+
+// ---- INIT ----
+loadLS();
+updateProvSelect();
+renderStock();
+renderStockStats();
+cargarApiKey();
+</script>
+</body>
+</html>
